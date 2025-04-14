@@ -4,10 +4,10 @@
 
 /**
  * Extracts metadata from an image
- * @param {Buffer|Blob|ArrayBuffer} imageData - The image data to extract metadata from
+ * @param {Buffer|Blob|ArrayBuffer} _imageData - The image data to extract metadata from
  * @returns {Promise<Object>} - The extracted metadata
  */
-async function extractMetadata(imageData) {
+async function extractMetadata(_imageData) {
   try {
     // This is a placeholder implementation
     // In a real implementation, we would use libraries like exif-js, exifr, or sharp (node)
@@ -29,6 +29,7 @@ async function extractMetadata(imageData) {
       icc: {}
     };
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.warn('Failed to extract metadata:', error);
     return {}; // Return empty metadata on failure
   }
@@ -56,6 +57,7 @@ async function applyMetadata(imageData, metadata) {
     
     return imageData;
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.warn('Failed to apply metadata:', error);
     return imageData; // Return original image data on failure
   }

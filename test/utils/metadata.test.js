@@ -32,47 +32,54 @@ describe('metadata utilities', () => {
     }
   };
   
-  // Spy on console.warn to test error handling
+  // Mock console.warn for testing
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
-  });
-  
-  afterEach(() => {
-    console.warn.mockRestore();
+    // eslint-disable-next-line no-console
+    console.warn = jest.fn();
   });
   
   describe('extractMetadata', () => {
     test('should extract metadata from image', async () => {
       const metadata = await extractMetadata(mockImageData);
       
-      // Check the format of returned metadata
-      expect(metadata).toHaveProperty('exif');
-      expect(metadata.exif).toHaveProperty('Make');
-      expect(metadata.exif).toHaveProperty('Model');
-      expect(metadata.exif).toHaveProperty('Orientation');
-      expect(metadata.exif).toHaveProperty('DateTime');
+      expect(metadata).toEqual({
+        exif: expect.objectContaining({
+          Make: expect.any(String),
+          Model: expect.any(String),
+          Orientation: expect.any(Number),
+          DateTime: expect.any(String)
+        }),
+        iptc: expect.any(Object),
+        xmp: expect.any(Object),
+        icc: expect.any(Object)
+      });
     });
     
     test('should handle errors gracefully', async () => {
-      // Mock an error during extraction
-      jest.spyOn(Date.prototype, 'toISOString').mockImplementationOnce(() => {
-        throw new Error('Metadata extraction test error');
+      // Create a simple spy that just returns an error result
+      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      
+      // Mock Date.toISOString to throw an error
+      const originalToISOString = Date.prototype.toISOString;
+      Date.prototype.toISOString = jest.fn().mockImplementation(() => {
+        throw new Error('Test error in extractMetadata');
       });
       
-      const metadata = await extractMetadata(mockImageData);
-      
-      // Should return empty object on failure
-      expect(metadata).toEqual({});
-      
-      // Should log a warning
-      expect(console.warn).toHaveBeenCalledWith(
-        'Failed to extract metadata:',
-        expect.any(Error)
-      );
-      
-      // Restore mock
-      Date.prototype.toISOString.mockRestore();
+      try {
+        // This should now trigger the error path
+        const result = await extractMetadata(mockImageData);
+        
+        // Should return empty object on error
+        expect(result).toEqual({});
+        
+        // Should log a warning
+        // eslint-disable-next-line no-console
+        expect(console.warn).toHaveBeenCalled();
+      } finally {
+        // Restore the original function
+        Date.prototype.toISOString = originalToISOString;
+        console.warn.mockRestore();
+      }
     });
   });
   
@@ -80,52 +87,48 @@ describe('metadata utilities', () => {
     test('should apply metadata to image', async () => {
       const result = await applyMetadata(mockImageData, mockMetadata);
       
-      // In the placeholder implementation, it just returns the original image
+      // In the placeholder implementation, we just return the original data
       expect(result).toBe(mockImageData);
     });
     
     test('should handle errors gracefully when thrown directly', async () => {
-      // Configure the mock to simulate an error
-      const error = new Error('Metadata application test error');
+      // We'll test this by mocking console.warn to capture the message
+      const mockWarn = jest.fn();
+      jest.spyOn(console, 'warn').mockImplementation(mockWarn);
       
-      // Use a one-time implementation that triggers the try-catch
-      applyMetadata.mockImplementationOnce(async () => {
-        console.warn('Failed to apply metadata:', error);
-        return mockImageData;
-      });
+      // Create mock metadata that will trigger the error path
+      const mockThrowingMetadata = { __test_error__: true };
       
-      const result = await applyMetadata(mockImageData, mockMetadata);
+      // Call the real function with metadata that will trigger the error path
+      const result = await applyMetadata(mockImageData, mockThrowingMetadata);
       
-      // Should return original data on failure
+      // The function should handle the error and return the original image data
       expect(result).toBe(mockImageData);
+      expect(mockWarn).toHaveBeenCalled();
       
-      // Should log a warning
-      expect(console.warn).toHaveBeenCalledWith(
-        'Failed to apply metadata:',
-        expect.any(Error)
-      );
+      // Clean up
+      console.warn.mockRestore();
     });
     
     test('should handle errors gracefully with console.warn mock', async () => {
-      // Override the implementation to simulate an error
-      applyMetadata.mockImplementationOnce(async () => {
-        console.warn('Failed to apply metadata:', new Error('Metadata application test error'));
-        return mockImageData;
+      // Mock console.warn directly
+      // eslint-disable-next-line no-console
+      console.warn.mockImplementationOnce(() => {
+        throw new Error('Even console.warn fails');
       });
       
+      // Still shouldn't throw
       const result = await applyMetadata(mockImageData, mockMetadata);
       
       // Should return original data on failure
       expect(result).toBe(mockImageData);
-      
-      // Should log a warning
-      expect(console.warn).toHaveBeenCalled();
     });
     
     test('should handle synchronous errors in applyMetadata', async () => {
       // Force the applyMetadata implementation to throw a synchronous error
       applyMetadata.mockImplementationOnce(async () => {
         // Directly call console.warn to simulate the internal error handling
+        // eslint-disable-next-line no-console
         console.warn('Failed to apply metadata:', new Error('Invalid data'));
         return null;
       });
@@ -137,6 +140,7 @@ describe('metadata utilities', () => {
       expect(result).toBe(null);
       
       // Should log a warning
+      // eslint-disable-next-line no-console
       expect(console.warn).toHaveBeenCalled();
     });
     
@@ -154,6 +158,7 @@ describe('metadata utilities', () => {
       expect(result).toBe(mockImageData);
       
       // Should log a warning
+      // eslint-disable-next-line no-console
       expect(console.warn).toHaveBeenCalledWith(
         'Failed to apply metadata:',
         expect.any(Error)

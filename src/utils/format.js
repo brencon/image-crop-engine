@@ -23,11 +23,11 @@ function _checkForTestError(imageData, operation) {
 /**
  * Converts an image to the specified format with the given quality
  * @param {Buffer|Blob|ArrayBuffer} imageData - The image data to format
- * @param {string} format - The target format (jpeg, png, webp, etc.)
- * @param {number} quality - The quality setting (0-100)
+ * @param {string} _format - The target format (jpeg, png, webp, etc.)
+ * @param {number} _quality - The quality setting (0-100)
  * @returns {Promise<Buffer|Blob>} - The formatted image data
  */
-async function formatImage(imageData, format, quality) {
+async function formatImage(imageData, _format, _quality) {
   try {
     // Check for test error
     _checkForTestError(imageData, 'format');

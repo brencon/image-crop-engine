@@ -1,10 +1,7 @@
-const fs = require('fs');
-const path = require('path');
 const { ImageCropEngine } = require('../src/index');
 
 describe('ImageCropEngine Integration Tests', () => {
   let cropEngine;
-  const mockImageData = Buffer.from('test-image-data');
   
   beforeEach(() => {
     cropEngine = new ImageCropEngine();
