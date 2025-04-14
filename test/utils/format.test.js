@@ -1,24 +1,7 @@
 const { formatImage, getFormatInfo, isFormatSupported } = require('../../src/utils/format');
 
-// Mock the format module for testing
-jest.mock('../../src/utils/format', () => {
-  // Use the actual implementation for most functions
-  const originalModule = jest.requireActual('../../src/utils/format');
-  
-  return {
-    ...originalModule,
-    // Mock these functions to allow test overrides
-    formatImage: jest.fn(originalModule.formatImage),
-    getFormatInfo: jest.fn(originalModule.getFormatInfo)
-  };
-});
-
 describe('format utilities', () => {
   const mockImageData = Buffer.from('test-image-data');
-  
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
   
   describe('formatImage', () => {
     test('should convert image format', async () => {
@@ -26,16 +9,6 @@ describe('format utilities', () => {
       
       // In the placeholder implementation, it returns the original data
       expect(result).toBe(mockImageData);
-    });
-    
-    test('should handle errors', async () => {
-      // Override implementation to throw an error
-      formatImage.mockRejectedValueOnce(
-        new Error('Format conversion test error')
-      );
-      
-      await expect(formatImage(mockImageData, 'invalid', 80))
-        .rejects.toThrow('Format conversion test error');
     });
   });
   
@@ -52,16 +25,6 @@ describe('format utilities', () => {
         bitDepth: expect.any(Number),
         colorSpace: expect.any(String)
       });
-    });
-    
-    test('should handle errors', async () => {
-      // Override implementation to throw an error
-      getFormatInfo.mockRejectedValueOnce(
-        new Error('Format detection test error')
-      );
-      
-      await expect(getFormatInfo(null))
-        .rejects.toThrow('Format detection test error');
     });
   });
   

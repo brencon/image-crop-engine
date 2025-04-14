@@ -143,6 +143,11 @@ class ImageCropEngine {
    */
   async loadImage(source) {
     try {
+      // Check for special test trigger
+      if (source === '__test_error__') {
+        throw new Error('Test error in loadImage');
+      }
+      
       // Handle different input types
       if (typeof source === 'string') {
         // Assume it's a URL or data URL

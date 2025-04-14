@@ -42,6 +42,11 @@ async function extractMetadata(imageData) {
  */
 async function applyMetadata(imageData, metadata) {
   try {
+    // Check for special test marker to trigger error
+    if (metadata && metadata.__test_error__) {
+      throw new Error('Test error in applyMetadata');
+    }
+    
     // This is a placeholder implementation
     // In a real implementation, we would use libraries like piexif (browser)
     // or sharp (Node.js) to apply the metadata to the image

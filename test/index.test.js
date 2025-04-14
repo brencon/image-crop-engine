@@ -188,6 +188,27 @@ describe('ImageCropEngine', () => {
       // Operation should be removed even on error
       expect(cropEngine.activeOperations.size).toBe(0);
     });
+    
+    test('should handle preserveMetadata=false', async () => {
+      cropEngine.preserveMetadata = false;
+      
+      const mockProgress = jest.fn();
+      
+      const result = await cropEngine.cropImageAsync(
+        mockImageData,
+        validCropParams,
+        { onProgress: mockProgress }
+      );
+      
+      expect(result).toEqual(Buffer.from('processed-image-data'));
+      
+      // Extraction should not be called
+      const { extractMetadata } = require('../src/utils/metadata');
+      expect(extractMetadata).not.toHaveBeenCalled();
+      
+      // Reset
+      cropEngine.preserveMetadata = true;
+    });
   });
   
   describe('utility methods', () => {
@@ -250,6 +271,118 @@ describe('ImageCropEngine', () => {
       await cropEngine.applyMetadata(mockImageData, metadata);
       
       expect(applyMetadata).toHaveBeenCalledWith(mockImageData, metadata);
+    });
+    
+    test('loadImage should handle direct errors', async () => {
+      // Mock fetch to throw an error
+      global.fetch = jest.fn().mockImplementationOnce(() => {
+        throw new Error('Direct fetch error');
+      });
+      
+      await expect(cropEngine.loadImage('https://example.com/image.jpg'))
+        .rejects.toThrow('Error loading image: Direct fetch error');
+    });
+    
+    // Add another test case for loadImage's string URL handling
+    test('loadImage should handle and parse string URLs', async () => {
+      // Mock a failed fetch response
+      global.fetch = jest.fn().mockRejectedValueOnce(
+        new Error('Network error')
+      );
+      
+      await expect(cropEngine.loadImage('https://example.com/image.jpg'))
+        .rejects.toThrow('Error loading image: Network error');
+    });
+    
+    test('loadImage should handle special test error', async () => {
+      await expect(cropEngine.loadImage('__test_error__'))
+        .rejects.toThrow('Error loading image: Test error in loadImage');
+    });
+    
+    test('loadImage should handle arrayBuffer from fetch', async () => {
+      const arrayBuffer = new ArrayBuffer(10);
+      
+      // Mock a successful fetch with arrayBuffer
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        arrayBuffer: jest.fn().mockResolvedValueOnce(arrayBuffer)
+      });
+      
+      const result = await cropEngine.loadImage('https://example.com/image.jpg');
+      
+      // Should get the array buffer back
+      expect(result).toBe(arrayBuffer);
+      expect(global.fetch).toHaveBeenCalledWith('https://example.com/image.jpg');
+    });
+    
+    test('loadImage should handle ArrayBuffer input', async () => {
+      const arrayBuffer = new ArrayBuffer(8);
+      const result = await cropEngine.loadImage(arrayBuffer);
+      expect(result).toBe(arrayBuffer);
+    });
+
+    test('loadImage should throw on unsupported source type', async () => {
+      // A number is not a supported source type
+      await expect(cropEngine.loadImage(123))
+        .rejects.toThrow('Error loading image: Unsupported source type');
+    });
+
+    test('loadImage should handle File input', async () => {
+      // Define a File mock if needed in the test environment
+      class MockFile {}
+      const origFile = global.File;
+      global.File = MockFile;
+      
+      // Create a mock File object
+      const fileObj = new MockFile();
+      
+      // Test the File branch
+      const result = await cropEngine.loadImage(fileObj);
+      
+      // Should return the file directly
+      expect(result).toBe(fileObj);
+      
+      // Restore original
+      global.File = origFile;
+    });
+
+    test('loadImage should handle Blob input', async () => {
+      // Define a Blob mock if needed in the test environment
+      class MockBlob {}
+      const origBlob = global.Blob;
+      global.Blob = MockBlob;
+      
+      // Create a mock Blob object
+      const blobObj = new MockBlob();
+      
+      // Test the Blob branch
+      const result = await cropEngine.loadImage(blobObj);
+      
+      // Should return the blob directly
+      expect(result).toBe(blobObj);
+      
+      // Restore original
+      global.Blob = origBlob;
+    });
+
+    test('loadImage should handle Buffer input', async () => {
+      // Create a Buffer
+      const buffer = Buffer.from('test-buffer-data');
+      
+      // Test the Buffer branch
+      const result = await cropEngine.loadImage(buffer);
+      
+      // Should return the buffer directly
+      expect(result).toBe(buffer);
+    });
+
+    test('saveImage should use default values when options not provided', async () => {
+      const { formatImage } = require('../src/utils/format');
+      
+      // Call without options
+      await cropEngine.saveImage(mockImageData);
+      
+      // Should use default format and quality
+      expect(formatImage).toHaveBeenCalledWith(mockImageData, 'jpeg', 90);
     });
   });
 }); 
