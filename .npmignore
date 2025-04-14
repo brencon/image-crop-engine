@@ -1,0 +1,8 @@
+src/
+test/
+coverage/
+.github/
+.babelrc
+.coveralls.yml
+.eslintrc.js
+jest.config.js 
